@@ -13,27 +13,26 @@ resource "aws_cloudfront_origin_access_control" "this" {
 # CloudFront Distribution
 ########################################
 resource "aws_cloudfront_distribution" "this" {
-  enabled             = true
-  default_root_object = "index.html"
-
-  origins {
+  origin {
     domain_name = var.alb_dns_name
     origin_id   = "alb-origin"
 
     custom_origin_config {
+      origin_protocol_policy = "https-only"
       http_port              = 80
       https_port             = 443
-      origin_protocol_policy = "https-only"
       origin_ssl_protocols   = ["TLSv1.2"]
     }
-
-    origin_access_control_id = aws_cloudfront_origin_access_control.this.id
   }
 
+  enabled             = true
+  default_root_object = ""
+
   default_cache_behavior {
-    allowed_methods  = ["GET", "HEAD", "OPTIONS"]
-    cached_methods   = ["GET", "HEAD"]
-    target_origin_id = "alb-origin"
+    target_origin_id       = "alb-origin"
+    viewer_protocol_policy = "redirect-to-https"
+    allowed_methods        = ["GET", "HEAD", "OPTIONS"]
+    cached_methods         = ["GET", "HEAD"]
 
     forwarded_values {
       query_string = false
@@ -41,16 +40,17 @@ resource "aws_cloudfront_distribution" "this" {
         forward = "none"
       }
     }
-
-    viewer_protocol_policy = "redirect-to-https"
-    min_ttl                = 0
-    default_ttl            = 3600
-    max_ttl                = 86400
   }
 
-  price_class = "PriceClass_100"
+  viewer_certificate {
+    cloudfront_default_certificate = true
+  }
 
-  restrictions {
-    geo_restriction {
-      res
-
+  # Optional WAF association
+  dynamic "web_acl_id" {
+    for_each = var.waf_acl_arn != null ? [var.waf_acl_arn] : []
+    content {
+      web_acl_id = web_acl_id.value
+    }
+  }
+}
