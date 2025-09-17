@@ -9,8 +9,9 @@ variable "certificate_arn" {
 }
 
 variable "waf_acl_arn" {
+  description = "Optional WAFv2 Web ACL ARN to associate with this CloudFront distribution"
   type        = string
-  description = "ARN of the WAF ACL to associate with CloudFront (optional)"
-  default     = ""
+  default     = null
 }
+
 
